@@ -12,7 +12,10 @@ class Board
     puts board_break
     num = 8
     @grid.each do |row|
-      puts "#{num} | #{row.join(' | ')} | #{num}"
+      new_row = row.map do |ele|
+        ele == ' ' ? ele : ele.symbol
+      end
+      puts "#{num} | #{new_row.join(' | ')} | #{num}"
       puts board_break
       num -= 1
     end
@@ -36,7 +39,7 @@ class Board
 
   def move_piece(start, finish)
     @grid[finish[0]][finish[1]] = @grid[start[0]][start[1]]
-    @grid[start[0]][start[1]] = '|  '
+    @grid[start[0]][start[1]] = ' '
   end
 
   def flip

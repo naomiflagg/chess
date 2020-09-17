@@ -33,26 +33,25 @@ class Game
   def add_pieces_to_board
     @pieces = [
       rookb = Rook.new('black'), rookw = Rook.new('white'), knightb = Knight.new('black'),
-      knightw = Knight.new('white'), bishopb = Bishop.new('black'), 
-      bishopw = Bishop.new('white'), queenb = Queen.new('black'), 
+      knightw = Knight.new('white'), bishopb = Bishop.new('black'),
+      bishopw = Bishop.new('white'), queenb = Queen.new('black'),
       queenw = Queen.new('white'), kingb = King.new('black'), kingw = King.new('white'), 
       pawnb = Pawn.new('black'), pawnw = Pawn.new('white')
     ]
     grid = [
       [
-        rookb.symbol, knightb.symbol, bishopb.symbol, queenb.symbol,
-        kingb.symbol, bishopb.symbol, knightb.symbol, rookb.symbol
+        rookb, knightb, bishopb, queenb,
+        kingb, bishopb, knightb, rookb
       ],
-      Array.new(8, pawnb.symbol), Array.new(8, ' '), Array.new(8, ' '),
-      Array.new(8, ' '), Array.new(8, ' '), Array.new(8, pawnw.symbol),
+      Array.new(8, pawnb), Array.new(8, ' '), Array.new(8, ' '),
+      Array.new(8, ' '), Array.new(8, ' '), Array.new(8, pawnw),
       [
-        rookw.symbol, knightw.symbol, bishopw.symbol, queenw.symbol,
-        kingw.symbol, bishopw.symbol, knightw.symbol, rookw.symbol
+        rookw, knightw, bishopw, queenw,
+        kingw, bishopw, knightw, rookw
       ]
     ]
   end
 
-  
   def play_turn
     loop do
       @board.display
@@ -69,9 +68,8 @@ class Game
   def request_move
     # Ask player for letter number coordinates of piece to move
     request_piece
-    binding.pry
     # Find possible moves for selected object, given current board and object's location
-    poss_moves = selected_piece[0].poss_moves(@board, @coord[0], @coord[1])
+    poss_moves = selected_piece.poss_moves(@coord[0], @coord[1], @board.grid)
     # Ask player for coordinates for selected piece's destination
     request_destination(poss_moves)
   end
@@ -95,11 +93,10 @@ class Game
     # Ensure selected piece is the current player's piece
     # Turn letter number coordinates in to array indices
     @coord = @board.find_coord(let_num)
-    # Find symbol at selected indices
-    selected_symbol = @board.grid[@coord[0]][@coord[1]]
-    # Find object that corresponds with the symbol
-    selected_piece = @pieces.select { |piece| piece.symbol == selected_symbol }
-    return true if selected_piece[0].color == @current_player.color
+    # Find piece at selected indices
+    selected_piece = @board.grid[@coord[0]][@coord[1]]
+    # Ensure piece belongs to current player
+    return true if selected_piece.color == @current_player.color
   end
 
   def request_destination(poss_moves)
@@ -115,6 +112,12 @@ class Game
     end
   end
 
+  def checkmate?
+  end
+
+  def check?
+  end
+
   def switch_player
     @current_player = @current_player == @player1 ? @player2 : @player1
     puts "Thanks. #{@current_player.name}, you're up!"
@@ -122,4 +125,6 @@ class Game
 end
 
 #game = Game.new
+#binding.pry
+#game.board.display
 #game.request_move

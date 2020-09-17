@@ -65,6 +65,37 @@ describe Game do
     end
   end
 
+  describe '#request_destination' do
+    let(:poss_moves) { [[0, 4], [1, 6]] }
+
+    before do
+      allow(game).to receive(:loop).and_yield.and_yield
+    end
+
+    context 'user inputs a letter number sequence' do
+      before do
+        allow(game).to receive(:gets).and_return('g7')
+      end
+
+      it 'returns an array of array indices if array contained in possible moves' do
+        expect(game.request_destination(poss_moves)).to eq([1, 6])
+      end
+
+      it 'breaks the loop' do
+        expect(game).to receive(:gets).once
+        game.request_destination(poss_moves)
+      end
+    end
+
+    context 'user inputs an incorrect value' do
+      it 'continues to loop' do
+        allow(game).to receive(:gets).and_return('a', 'h9')
+        expect(game).to receive(:gets).exactly(:twice)
+        game.request_destination(poss_moves)
+      end
+    end
+  end
+
   describe '#switch_player' do
     it 'toggles the value of @current_player between player1 and player2' do
       game.current_player = game.player1
