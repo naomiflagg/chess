@@ -1,8 +1,9 @@
 class Board  
-  attr_accessor :grid
+  attr_accessor :grid, :fallen
 
   def initialize(grid)
     @grid = grid
+    @fallen = []
   end
 
   def display
@@ -20,6 +21,8 @@ class Board
       num -= 1
     end
     puts alpha
+    puts 'The fallen:'
+    @fallen.each { |piece| print piece.symbol } unless @fallen.empty?
   end
 
   # Find grid coordinates associated with letter number format
@@ -38,6 +41,8 @@ class Board
   end
 
   def move_piece(start, finish)
+    dest_piece = @grid[finish[0]][finish[1]]
+    @fallen << dest_piece unless dest_piece == ' '
     @grid[finish[0]][finish[1]] = @grid[start[0]][start[1]]
     @grid[start[0]][start[1]] = ' '
   end

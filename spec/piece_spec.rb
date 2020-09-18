@@ -12,7 +12,12 @@ describe Pawn do
     end
     it 'returns an array of one move when a piece is blocking second option' do
       game.board.grid[4][3] = Pawn.new('black')
-      expect(pawn.poss_moves(6, 3, game.board.grid)).to eq([[4, 3]])
+      expect(pawn.poss_moves(6, 3, game.board.grid)).to eq([[5, 3]])
+    end
+    it "returns an array of diagonal move when other player's piece is there" do
+      game.board.grid[5][3] = Pawn.new('white')
+      game.board.grid[5][2] = Knight.new('black')
+      expect(pawn.poss_moves(6, 3, game.board.grid)).to eq([[5, 2]])
     end
   end
 end

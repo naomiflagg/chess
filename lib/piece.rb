@@ -5,16 +5,6 @@ class Piece
   def initialize
   end
 
-  def poss_moves(moves, board)
-    # Select for moves that are on the board
-    moves.select do |move|
-      current_occupant = board[move[0]][move[1]]
-      # Determine color of occupant in target square, to ensure not one of current player's
-      curr_occ_color = current_occupant == ' ' ? 'green' : current_occupant.color
-      move[0].between?(0, 7) && move[1].between?(0, 7) && curr_occ_color != @color
-    end
-  end
-
   def valid?(move, board)
     return false unless move[0].between?(0, 7) && move[1].between?(0, 7)
 
@@ -22,6 +12,7 @@ class Piece
     # Determine color of occupant in target square, to ensure not one of current player's
     curr_occ_color = current_occupant == ' ' ? 'green' : current_occupant.color
     return false if curr_occ_color == @color
+
     #if would cause check
     true
   end
@@ -34,16 +25,20 @@ class Pawn < Piece
   end
 
   def poss_moves(row, col, board)
-    moves = [[row - 1, col]]
-    
-    #pawn can move two if in row 6, but not if there's a
-    #pawn in the way. 
-    #pawn can't move if anything in the way.
-    #if row == 6 && board[row - 1][col] == ' '
-     # moves << [row - 2, col]
-    #end
-    super(moves, board)
+    moves = []
+    move = [row - 1, col]
+    moves << move if board[move[0]][move[1]] == ' '
+    # Allow pawn to move two forward if in starting position
+    move = [row - 2, col]
+    moves << move if row == 6 && !moves.empty? && board[move[0]][move[1]] == ' '
+    # Pawn can move diagonally forward if other player's piece is there
+    diags = [[row - 1, col - 1], [row - 1, col + 1]]
+    diags.each do |diag|
+      moves << diag if valid?(diag, board) && board[diag[0]][diag[1]] != ' '
     #en passant
+    #end of board turn in to other piece
+    end
+    moves
   end
 end
 
@@ -94,7 +89,7 @@ class Rook < Piece
     @color = color
     @symbol = color == 'white' ? "\u{2656}" : "\u{265C}"
   end
-  
+
   def poss_moves(row, col, board)
     moves = []
     shifts = [[1, 0], [0, 1], [-1, 0], [0, -1]]
@@ -119,7 +114,7 @@ class Queen < Piece
     @color = color
     @symbol = color == 'white' ? "\u{2655}" : "\u{265B}"
   end
-  
+
   def poss_moves(row, col, board)
     moves = []
     shifts = [[1, 0], [0, 1], [-1, 0], [0, -1], [1, 1], [-1, 1], [1, -1], [-1, -1]]
@@ -144,7 +139,7 @@ class King < Piece
     @color = color
     @symbol = color == 'white' ? "\u{2654}" : "\u{265A}"
   end
-  
+
   def poss_moves(row, col, board)
   #cant go through check
   end

@@ -3,8 +3,9 @@ class Game
   require_relative('piece.rb')
   require_relative('player.rb')
   require 'pry'
-  
-  attr_accessor :board, :player1, :player2, :current_player, :coord
+
+  attr_accessor :current_player
+  attr_reader :board, :player1, :player2, :coord, :last_move, :check
 
   def initialize
     @player1 = Player.new('Player 1', 'white')
@@ -31,23 +32,16 @@ class Game
   end
 
   def add_pieces_to_board
-    @pieces = [
-      rookb = Rook.new('black'), rookw = Rook.new('white'), knightb = Knight.new('black'),
-      knightw = Knight.new('white'), bishopb = Bishop.new('black'),
-      bishopw = Bishop.new('white'), queenb = Queen.new('black'),
-      queenw = Queen.new('white'), kingb = King.new('black'), kingw = King.new('white'), 
-      pawnb = Pawn.new('black'), pawnw = Pawn.new('white')
-    ]
     grid = [
       [
-        rookb, knightb, bishopb, queenb,
-        kingb, bishopb, knightb, rookb
+        Rook.new('black'), Knight.new('black'), Bishop.new('black'), Queen.new('black'),
+        King.new('black'), Bishop.new('black'), Knight.new('black'), Rook.new('black')
       ],
-      Array.new(8, pawnb), Array.new(8, ' '), Array.new(8, ' '),
-      Array.new(8, ' '), Array.new(8, ' '), Array.new(8, pawnw),
+      Array.new(8, Pawn.new('black')), Array.new(8, ' '), Array.new(8, ' '),
+      Array.new(8, ' '), Array.new(8, ' '), Array.new(8, Pawn.new('white')),
       [
-        rookw, knightw, bishopw, queenw,
-        kingw, bishopw, knightw, rookw
+        Rook.new('white'), Knight.new('white'), Bishop.new('white'), Queen.new('white'),
+        King.new('white'), Bishop.new('white'), Knight.new('white'), Rook.new('white')
       ]
     ]
   end
@@ -56,6 +50,7 @@ class Game
     loop do
       @board.display
       request_move
+      @last_move = [@selected_piece, @coord, @dest]
       move_piece(@coord, @dest)
       break if checkmate?
 
@@ -94,9 +89,9 @@ class Game
     # Turn letter number coordinates in to array indices
     @coord = @board.find_coord(let_num)
     # Find piece at selected indices
-    selected_piece = @board.grid[@coord[0]][@coord[1]]
+    @selected_piece = @board.grid[@coord[0]][@coord[1]]
     # Ensure piece belongs to current player
-    return true if selected_piece.color == @current_player.color
+    return true if @selected_piece.color == @current_player.color
   end
 
   def request_destination(poss_moves)
