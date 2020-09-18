@@ -141,6 +141,12 @@ class King < Piece
   end
 
   def poss_moves(row, col, board)
-  #cant go through check
+    moves = [
+      [row + 1, col], [row + 1, col + 1], [row + 1, col - 1], [row, col + 1],
+      [row - 1, col], [row - 1, col + 1], [row - 1, col - 1], [row, col - 1]
+    ]
+    moves.select do |move|
+      valid?(move, board)
+    end
   end
 end

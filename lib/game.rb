@@ -4,25 +4,23 @@ class Game
   require_relative('player.rb')
   require 'pry'
 
-  attr_accessor :current_player
-  attr_reader :board, :player1, :player2, :coord, :last_move, :check
+  attr_accessor :current_player, :coord, :dest
+  attr_reader :board, :player1, :player2, :last_move, :check, :kingw
 
   def initialize
     @player1 = Player.new('Player 1', 'white')
     @player2 = Player.new('Player 2', 'black')
     @current_player = @player1
     @board = Board.new(add_pieces_to_board)
-    @kingb_loc = @board.grid[0][4]
-    @kingw_loc = @board.grid[7][4]
     @current_king = @kingw
     @opposing_king = @kingb
+    @check = false
   end
 
   def begin_game
     display_instructions
     change_player_name(player1)
     change_player_name(player2)
-    add_pieces_to_board
     play_turn
   end
 
@@ -36,7 +34,7 @@ class Game
   end
 
   def add_pieces_to_board
-    grid = [
+    [
       [
         Rook.new('black'), Knight.new('black'), Bishop.new('black'), Queen.new('black'),
         @kingb = King.new('black'), Bishop.new('black'), Knight.new('black'), Rook.new('black')
@@ -52,15 +50,14 @@ class Game
 
   def play_turn
     loop do
+      respond_to_check
       @board.display
       request_move
-      set_king_loc
       @last_move = [@selected_piece, @coord, @dest]
       @board.move_piece(@coord, @dest)
       verify_king_attack(@opposing_king)
       break if game_over?
 
-      respond_to_check
       switch_player
       @board.flip
     end
@@ -85,7 +82,7 @@ class Game
       break if valid?(let_num)
 
       puts "Your input must be in letter number format, like b6, and make sure\n"\
-      "you're selecting your own color."
+      "you're selecting your own color. Try again."
     end
   end
 
@@ -98,6 +95,8 @@ class Game
     @coord = @board.find_coord(let_num)
     # Find piece at selected indices
     @selected_piece = @board.grid[@coord[0]][@coord[1]]
+    return false if @selected_piece == ' '
+
     # Ensure piece belongs to current player
     return true if @selected_piece.color == @current_player.color
   end
@@ -114,10 +113,10 @@ class Game
       if poss_moves.include?(@dest)
         return @dest unless causes_check?
 
-        puts 'Your move puts your king in check. Please try another.'
+        puts 'Your move puts or keeps your king in check. Please try another.'
         return false
       end
-      puts "Your move is not valid. Please try again,\n"
+      puts "Your move is not valid. Please try again,\n" \
       'or enter N to select another piece to move.'
     end
   end
@@ -135,22 +134,24 @@ class Game
     return true if @check
   end
 
-  def king_loc
-    return unless @selected_piece.class == King
-
-    @current_king == @kingw ? @kingw_loc = @dest : @kingb_loc = @dest
-  end
-
   def verify_king_attack(target_king)
     @check = false
     @checkmate = true
-    target_king_loc = target_king == kingw ? kingw_loc : kingb_loc
+    target_king_loc = find_king(target_king)
     @board.grid.each_with_index do |row, row_idx|
       row.each_with_index do |ele, col_idx|
-        unless ele == ' '
+        unless ele == ' ' || ele.color == target_king.color
           poss_moves = ele.poss_moves(row_idx, col_idx, @board.grid)
           poss_moves.include?(target_king_loc) ? @check = true : @checkmate = false
         end
+      end
+    end
+  end
+
+  def find_king(target_king)
+    @board.grid.each_with_index do |row, row_idx|
+      row.each_with_index do |ele, col_idx|
+        return [row_idx, col_idx] if ele == target_king
       end
     end
   end
@@ -160,18 +161,16 @@ class Game
   end
 
   def respond_to_check
-    puts "#{@current_player}, your king is in check." if @check
+    puts "#{@current_player.name}, your king is in check." if @check
   end
 
   def switch_player
     @current_player = @current_player == @player1 ? @player2 : @player1
     @current_king = @current_king == @kingb ? @kingw : @kingb
     @opposing_king = @opposing_king == @kingb ? @kingw : @kingb
-    puts "Thanks. #{@current_player.name}, you're up!"
+    puts "#{@current_player.name}, you're up!"
   end
 end
 
-#game = Game.new
-#binding.pry
-#game.board.display
-#game.request_move
+game = Game.new
+game.begin_game

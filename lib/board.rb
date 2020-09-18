@@ -21,8 +21,11 @@ class Board
       num -= 1
     end
     puts alpha
-    puts 'The fallen:'
-    @fallen.each { |piece| print piece.symbol } unless @fallen.empty?
+    unless @fallen.empty?
+      puts 'The fallen:'
+      @fallen.each { |piece| print piece.symbol }
+      puts "\n"
+    end
   end
 
   # Find grid coordinates associated with letter number format
@@ -48,7 +51,7 @@ class Board
   end
 
   def flip
-    # Flip board so other color on top
+    @grid.map!(&:reverse).reverse!
   end
 end
 
