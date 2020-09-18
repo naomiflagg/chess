@@ -50,7 +50,7 @@ describe Board do
     end
 
     it 'adds an eliminated piece to fallen array' do
-      expect(@board.fallen.size).to eq(2)
+      expect(@board.fallen.size).to eq(3)
     end
   end
 end

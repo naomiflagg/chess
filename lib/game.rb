@@ -12,6 +12,10 @@ class Game
     @player2 = Player.new('Player 2', 'black')
     @current_player = @player1
     @board = Board.new(add_pieces_to_board)
+    @kingb_loc = @board.grid[0][4]
+    @kingw_loc = @board.grid[7][4]
+    @current_king = @kingw
+    @opposing_king = @kingb
   end
 
   def begin_game
@@ -35,13 +39,13 @@ class Game
     grid = [
       [
         Rook.new('black'), Knight.new('black'), Bishop.new('black'), Queen.new('black'),
-        King.new('black'), Bishop.new('black'), Knight.new('black'), Rook.new('black')
+        @kingb = King.new('black'), Bishop.new('black'), Knight.new('black'), Rook.new('black')
       ],
       Array.new(8, Pawn.new('black')), Array.new(8, ' '), Array.new(8, ' '),
       Array.new(8, ' '), Array.new(8, ' '), Array.new(8, Pawn.new('white')),
       [
         Rook.new('white'), Knight.new('white'), Bishop.new('white'), Queen.new('white'),
-        King.new('white'), Bishop.new('white'), Knight.new('white'), Rook.new('white')
+        @kingw = King.new('white'), Bishop.new('white'), Knight.new('white'), Rook.new('white')
       ]
     ]
   end
@@ -50,23 +54,27 @@ class Game
     loop do
       @board.display
       request_move
+      set_king_loc
       @last_move = [@selected_piece, @coord, @dest]
-      move_piece(@coord, @dest)
-      break if checkmate?
+      @board.move_piece(@coord, @dest)
+      verify_king_attack(@opposing_king)
+      break if game_over?
 
-      check?
+      respond_to_check
       switch_player
       @board.flip
     end
   end
 
   def request_move
-    # Ask player for letter number coordinates of piece to move
-    request_piece
-    # Find possible moves for selected object, given current board and object's location
-    poss_moves = selected_piece.poss_moves(@coord[0], @coord[1], @board.grid)
-    # Ask player for coordinates for selected piece's destination
-    request_destination(poss_moves)
+    loop do
+      # Ask player for letter number coordinates of piece to move
+      request_piece
+      # Find possible moves for selected object, given current board and object's location
+      poss_moves = @selected_piece.poss_moves(@coord[0], @coord[1], @board.grid)
+      # Ask player for coordinates for selected piece's destination
+      break unless request_destination(poss_moves) == false
+    end
   end
 
   def request_piece
@@ -98,23 +106,67 @@ class Game
     puts 'Where would you like to move your piece? Use letter, number coordinates.'
     loop do
       @dest = gets.chomp.downcase
+      return false if @dest == 'n'
+
       # Turn letter, number input in to array indices
       @dest = @board.find_coord(@dest)
       # Ensure input is in the list of valid moves
-      return @dest if poss_moves.include?(@dest)
+      if poss_moves.include?(@dest)
+        return @dest unless causes_check?
 
-      puts 'Your move is not valid. Please try again.'
+        puts 'Your move puts your king in check. Please try another.'
+        return false
+      end
+      puts "Your move is not valid. Please try again,\n"
+      'or enter N to select another piece to move.'
     end
   end
 
-  def checkmate?
+  def causes_check?
+    # Store destination piece as move is temporary
+    temp_piece = @board.grid[@dest[0]][@dest[1]]
+    # Temporarily move piece as player intends
+    @board.grid[@dest[0]][@dest[1]] = @board.grid[@coord[0]][@coord[1]]
+    @board.grid[@coord[0]][@coord[1]] = ' '
+    verify_king_attack(@current_king)
+    # Return board to original state
+    @board.grid[@coord[0]][@coord[1]] = @board.grid[@dest[0]][@dest[1]]
+    @board.grid[@dest[0]][@dest[1]] = temp_piece
+    return true if @check
   end
 
-  def check?
+  def king_loc
+    return unless @selected_piece.class == King
+
+    @current_king == @kingw ? @kingw_loc = @dest : @kingb_loc = @dest
+  end
+
+  def verify_king_attack(target_king)
+    @check = false
+    @checkmate = true
+    target_king_loc = target_king == kingw ? kingw_loc : kingb_loc
+    @board.grid.each_with_index do |row, row_idx|
+      row.each_with_index do |ele, col_idx|
+        unless ele == ' '
+          poss_moves = ele.poss_moves(row_idx, col_idx, @board.grid)
+          poss_moves.include?(target_king_loc) ? @check = true : @checkmate = false
+        end
+      end
+    end
+  end
+
+  def game_over?
+    puts "Checkmate! #{@current_player.name} wins." if @checkmate
+  end
+
+  def respond_to_check
+    puts "#{@current_player}, your king is in check." if @check
   end
 
   def switch_player
     @current_player = @current_player == @player1 ? @player2 : @player1
+    @current_king = @current_king == @kingb ? @kingw : @kingb
+    @opposing_king = @opposing_king == @kingb ? @kingw : @kingb
     puts "Thanks. #{@current_player.name}, you're up!"
   end
 end
