@@ -55,9 +55,10 @@ class Game
       request_move
       @last_move = [@selected_piece, @coord, @dest]
       @board.move_piece(@coord, @dest)
-      verify_king_attack(@opposing_king)
-      break if game_over?
-
+      check?(@opposing_king)
+      break if @check && checkmate?
+      
+      respond_to_check
       switch_player
       @board.flip
     end
@@ -111,7 +112,7 @@ class Game
       @dest = @board.find_coord(@dest)
       # Ensure input is in the list of valid moves
       if poss_moves.include?(@dest)
-        return @dest unless causes_check?
+        return @dest unless causes_check?(@current_king, @coord, @dest)
 
         puts 'Your move puts or keeps your king in check. Please try another.'
         return false
@@ -121,31 +122,50 @@ class Game
     end
   end
 
-  def causes_check?
+  def causes_check?(target_king, start, finish)
     # Store destination piece as move is temporary
-    temp_piece = @board.grid[@dest[0]][@dest[1]]
+    temp_piece = @board.grid[finish[0]][finish[1]]
     # Temporarily move piece as player intends
-    @board.grid[@dest[0]][@dest[1]] = @board.grid[@coord[0]][@coord[1]]
-    @board.grid[@coord[0]][@coord[1]] = ' '
-    verify_king_attack(@current_king)
+    @board.grid[finish[0]][finish[1]] = @board.grid[start[0]][start[1]]
+    @board.grid[start[0]][start[1]] = ' '
+    check?(target_king)
     # Return board to original state
-    @board.grid[@coord[0]][@coord[1]] = @board.grid[@dest[0]][@dest[1]]
-    @board.grid[@dest[0]][@dest[1]] = temp_piece
+    @board.grid[start[0]][start[1]] = @board.grid[finish[0]][finish[1]]
+    @board.grid[finish[0]][finish[1]] = temp_piece
     return true if @check
   end
 
-  def verify_king_attack(target_king)
+  def check?(target_king)
     @check = false
-    @checkmate = true
     target_king_loc = find_king(target_king)
     @board.grid.each_with_index do |row, row_idx|
       row.each_with_index do |ele, col_idx|
         unless ele == ' ' || ele.color == target_king.color
           poss_moves = ele.poss_moves(row_idx, col_idx, @board.grid)
-          poss_moves.include?(target_king_loc) ? @check = true : @checkmate = false
+          @check = true if poss_moves.include?(target_king_loc)
         end
       end
     end
+    @check
+  end
+
+  def checkmate?
+    @board.flip
+    @board.grid.each_with_index do |row, row_idx|
+      row.each_with_index do |ele, col_idx|
+        unless ele == ' ' || ele.color == @current_king.color
+          poss_moves = ele.poss_moves(row_idx, col_idx, @board.grid)
+          poss_moves.each do |move|
+            unless causes_check?(@opposing_king, [row_idx, col_idx], move)
+              @board.flip
+              return false
+            end
+          end
+        end
+      end
+    end
+    puts "Checkmate! #{@current_player.name} wins."
+    true
   end
 
   def find_king(target_king)
@@ -154,10 +174,6 @@ class Game
         return [row_idx, col_idx] if ele == target_king
       end
     end
-  end
-
-  def game_over?
-    puts "Checkmate! #{@current_player.name} wins." if @checkmate
   end
 
   def respond_to_check
