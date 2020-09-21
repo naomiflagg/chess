@@ -57,6 +57,7 @@ class Game
       @last_move = [@selected_piece, @coord, @dest]
       castle
       @board.move_piece(@coord, @dest)
+      request_pawn_change
       mark_moved(@selected_piece)
       @check = check?(@opposing_king)
       break if checkmate?
@@ -229,6 +230,37 @@ class Game
     end
   end
 
+  def request_pawn_change
+    return unless @selected_piece.class == Pawn && @dest[0].zero?
+
+    pieces = %w[knight bishop queen rook]
+    puts 'What would you like to change your pawn to?'
+    loop do
+      piece = gets.chomp.downcase
+      if pieces.include?(piece)
+        change_pawn(piece)
+        return
+      end
+
+      puts 'Selection is not valid. Try again.'
+    end
+  end
+
+  def change_pawn(piece)
+    color = @selected_piece.color
+    new_piece = case piece
+                when 'knight'
+                  Knight.new(color)
+                when 'bishop'
+                  Bishop.new(color)
+                when 'queen'
+                  Queen.new(color)
+                when 'rook'
+                  Rook.new(color)
+                end
+    @board.grid[@dest[0]][@dest[1]] = new_piece
+  end
+
   def switch_player
     @current_player = @current_player == @player1 ? @player2 : @player1
     @current_king = @current_king == @kingb ? @kingw : @kingb
@@ -237,5 +269,5 @@ class Game
   end
 end
 
-#game = Game.new
-#game.begin_game
+game = Game.new
+game.begin_game
