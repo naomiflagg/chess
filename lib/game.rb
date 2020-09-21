@@ -4,7 +4,7 @@ class Game
   require_relative('player.rb')
   require 'pry'
 
-  attr_accessor :current_player, :coord, :dest, :selected_piece, :poss_moves
+  attr_accessor :current_player, :coord, :dest, :selected_piece, :poss_moves, :last_move
   attr_reader :board, :player1, :player2, :last_move, :check, :kingw
 
   def initialize
@@ -15,6 +15,7 @@ class Game
     @current_king = @kingw
     @opposing_king = @kingb
     @check = false
+    @last_move = [Knight, nil, nil]
   end
 
   def begin_game
@@ -39,8 +40,8 @@ class Game
         Rook.new('black'), Knight.new('black'), Bishop.new('black'), Queen.new('black'),
         @kingb = King.new('black'), Bishop.new('black'), Knight.new('black'), Rook.new('black')
       ],
-      Array.new(8, Pawn.new('black')), Array.new(8, ' '), Array.new(8, ' '),
-      Array.new(8, ' '), Array.new(8, ' '), Array.new(8, Pawn.new('white')),
+      Array.new(8) { Pawn.new('black') }, Array.new(8, ' '), Array.new(8, ' '),
+      Array.new(8, ' '), Array.new(8, ' '), Array.new(8) { Pawn.new('white') },
       [
         Rook.new('white'), Knight.new('white'), Bishop.new('white'), Queen.new('white'),
         @kingw = King.new('white'), Bishop.new('white'), Knight.new('white'), Rook.new('white')
@@ -54,6 +55,7 @@ class Game
       @board.display
       request_move
       @last_move = [@selected_piece, @coord, @dest]
+      castle
       @board.move_piece(@coord, @dest)
       mark_moved(@selected_piece)
       check?(@opposing_king)
@@ -71,6 +73,7 @@ class Game
       # Find possible moves for selected object, given current board and object's location
       @poss_moves = @selected_piece.poss_moves(@coord[0], @coord[1], @board.grid)
       add_castle_moves
+      add_en_passant_move
       # Ask player for coordinates for selected piece's destination
       break unless request_destination(poss_moves) == false
     end
@@ -142,7 +145,7 @@ class Game
 
   def check?(target_king)
     @check = false
-    target_king_loc = find_king(target_king)
+    target_king_loc = find_piece(target_king)
     @board.grid.each_with_index do |row, row_idx|
       row.each_with_index do |ele, col_idx|
         unless ele == ' ' || ele.color == target_king.color
@@ -173,10 +176,10 @@ class Game
     true
   end
 
-  def find_king(target_king)
+  def find_piece(piece)
     @board.grid.each_with_index do |row, row_idx|
       row.each_with_index do |ele, col_idx|
-        return [row_idx, col_idx] if ele == target_king
+        return [row_idx, col_idx] if ele == piece
       end
     end
   end
@@ -186,9 +189,9 @@ class Game
   end
 
   def add_castle_moves
-    return unless @selected_piece.class == King && !@selected_piece.moved
+    return unless @selected_piece.class == King && !@selected_piece.moved && !@check
 
-    king_loc = find_king(@selected_piece)
+    king_loc = find_piece(@selected_piece)
     # Check if possible to castle right
     @poss_moves << [king_loc[0], king_loc[1] + 2] if can_castle?((king_loc[1] + 1..6).to_a, @board.grid[7][7])
     # Check if possible to castle left
@@ -198,7 +201,9 @@ class Game
   def can_castle?(array, rook)
     # Ensure rightmost piece is rook, rook has not moved, and spaces between are empty
     array.each do |col|
-      return false if @board.grid[7][col] != ' ' || rook.class != Rook || rook.moved == true
+      return false if @board.grid[7][col] != ' ' \
+      || causes_check?(@current_king, @coord, [7, col]) \
+      || rook.class != Rook || rook.moved == true
     end
   end
 
@@ -212,8 +217,16 @@ class Game
     end
   end
 
-  def en_passant
-
+  def add_en_passant_move
+    last_piece = @last_move[0]
+    last_piece_loc = find_piece(last_piece)
+    # Ensure last move was pawn that moved two from starting position
+    if @selected_piece.class == Pawn && last_piece.class == Pawn \
+      && @last_move[1][0] == 6 && @last_move[2][0] == 4 \
+      && @coord[0] == last_piece_loc[0] \
+      && (@coord[1] - last_piece_loc[1]).abs == 1
+      @poss_moves << [@coord[0] - 1, last_piece_loc[1]]
+    end
   end
 
   def switch_player
@@ -224,5 +237,5 @@ class Game
   end
 end
 
-#game = Game.new
-#game.begin_game
+game = Game.new
+game.begin_game

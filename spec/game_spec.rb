@@ -182,6 +182,20 @@ describe Game do
     end
   end
 
+  describe '#add_en_passant_move' do
+    it 'adds en passant move when last move was pawn moving 2 from start' do
+      game.poss_moves = []
+      pawn = board.grid[6][4]
+      board.move_piece([6, 4], [4, 4])
+      game.last_move = [pawn, [6, 4], [4, 4]]
+      game.selected_piece = board.grid[6][5]
+      board.move_piece([6, 5], [3, 5])
+      game.coord = [4, 5]
+      game.add_en_passant_move
+      expect(game.poss_moves). to eq([[3, 4]])
+    end
+  end
+
   describe '#switch_player' do
     it 'toggles the value of @current_player between player1 and player2' do
       game.current_player = game.player1
