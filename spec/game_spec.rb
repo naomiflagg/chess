@@ -135,9 +135,10 @@ describe Game do
       end
     end
   end
-  
+
   describe '#add_castle_moves' do
     before(:each) do
+      game.coord = [7, 3]
       game.selected_piece = game.kingw
       game.poss_moves = []
       board.grid[7][5] = ' '

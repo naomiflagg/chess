@@ -58,8 +58,8 @@ class Game
       castle
       @board.move_piece(@coord, @dest)
       mark_moved(@selected_piece)
-      check?(@opposing_king)
-      break if @check && checkmate?
+      @check = check?(@opposing_king)
+      break if checkmate?
 
       switch_player
       @board.flip
@@ -127,7 +127,7 @@ class Game
   end
 
   def mark_moved(piece)
-    piece.moved = true if [King, Rook].include?(piece)    
+    piece.moved = true if [King, Rook].include?(piece)
   end
 
   def causes_check?(target_king, start, finish)
@@ -136,25 +136,25 @@ class Game
     # Temporarily move piece as player intends
     @board.grid[finish[0]][finish[1]] = @board.grid[start[0]][start[1]]
     @board.grid[start[0]][start[1]] = ' '
-    check?(target_king)
+    cause = check?(target_king)
     # Return board to original state
     @board.grid[start[0]][start[1]] = @board.grid[finish[0]][finish[1]]
     @board.grid[finish[0]][finish[1]] = temp_piece
-    return true if @check
+    return true if cause
   end
 
   def check?(target_king)
-    @check = false
+    check = false
     target_king_loc = find_piece(target_king)
     @board.grid.each_with_index do |row, row_idx|
       row.each_with_index do |ele, col_idx|
         unless ele == ' ' || ele.color == target_king.color
           poss_moves = ele.poss_moves(row_idx, col_idx, @board.grid)
-          @check = true if poss_moves.include?(target_king_loc)
+          check = true if poss_moves.include?(target_king_loc)
         end
       end
     end
-    @check
+    check
   end
 
   def checkmate?
@@ -237,5 +237,5 @@ class Game
   end
 end
 
-game = Game.new
-game.begin_game
+#game = Game.new
+#game.begin_game
