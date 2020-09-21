@@ -13,7 +13,6 @@ class Piece
     curr_occ_color = current_occupant == ' ' ? 'green' : current_occupant.color
     return false if curr_occ_color == @color
 
-    #if would cause check
     true
   end
 end
@@ -85,6 +84,8 @@ class Bishop < Piece
 end
 
 class Rook < Piece
+  attr_accessor :moved
+
   def initialize(color)
     @color = color
     @symbol = color == 'white' ? "\u{2656}" : "\u{265C}"
@@ -135,6 +136,8 @@ class Queen < Piece
 end
 
 class King < Piece
+  attr_accessor :moved
+
   def initialize(color)
     @color = color
     @symbol = color == 'white' ? "\u{2654}" : "\u{265A}"

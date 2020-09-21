@@ -4,7 +4,7 @@ class Game
   require_relative('player.rb')
   require 'pry'
 
-  attr_accessor :current_player, :coord, :dest
+  attr_accessor :current_player, :coord, :dest, :selected_piece, :poss_moves
   attr_reader :board, :player1, :player2, :last_move, :check, :kingw
 
   def initialize
@@ -55,10 +55,10 @@ class Game
       request_move
       @last_move = [@selected_piece, @coord, @dest]
       @board.move_piece(@coord, @dest)
+      mark_moved(@selected_piece)
       check?(@opposing_king)
       break if @check && checkmate?
-      
-      respond_to_check
+
       switch_player
       @board.flip
     end
@@ -69,7 +69,8 @@ class Game
       # Ask player for letter number coordinates of piece to move
       request_piece
       # Find possible moves for selected object, given current board and object's location
-      poss_moves = @selected_piece.poss_moves(@coord[0], @coord[1], @board.grid)
+      @poss_moves = @selected_piece.poss_moves(@coord[0], @coord[1], @board.grid)
+      add_castle_moves
       # Ask player for coordinates for selected piece's destination
       break unless request_destination(poss_moves) == false
     end
@@ -120,6 +121,10 @@ class Game
       puts "Your move is not valid. Please try again,\n" \
       'or enter N to select another piece to move.'
     end
+  end
+
+  def mark_moved(piece)
+    piece.moved = true if [King, Rook].include?(piece)    
   end
 
   def causes_check?(target_king, start, finish)
@@ -180,6 +185,37 @@ class Game
     puts "#{@current_player.name}, your king is in check." if @check
   end
 
+  def add_castle_moves
+    return unless @selected_piece.class == King && !@selected_piece.moved
+
+    king_loc = find_king(@selected_piece)
+    # Check if possible to castle right
+    @poss_moves << [king_loc[0], king_loc[1] + 2] if can_castle?((king_loc[1] + 1..6).to_a, @board.grid[7][7])
+    # Check if possible to castle left
+    @poss_moves << [king_loc[0], king_loc[1] - 2] if can_castle?((1...king_loc[1]).to_a, @board.grid[7][0])
+  end
+
+  def can_castle?(array, rook)
+    # Ensure rightmost piece is rook, rook has not moved, and spaces between are empty
+    array.each do |col|
+      return false if @board.grid[7][col] != ' ' || rook.class != Rook || rook.moved == true
+    end
+  end
+
+  def castle
+    if @selected_piece == kingw
+      @board.move_piece([7, 7], [7, 5]) if @dest == [7, 6]
+      @board.move_piece([7, 0], [7, 3]) if @dest == [7, 2]
+    else
+      @board.move_piece([7, 7], [7, 4]) if @dest == [7, 5]
+      @board.move_piece([7, 0], [7, 2]) if @dest == [7, 1]
+    end
+  end
+
+  def en_passant
+
+  end
+
   def switch_player
     @current_player = @current_player == @player1 ? @player2 : @player1
     @current_king = @current_king == @kingb ? @kingw : @kingb
@@ -188,5 +224,5 @@ class Game
   end
 end
 
-game = Game.new
-game.begin_game
+#game = Game.new
+#game.begin_game

@@ -83,3 +83,18 @@ describe Queen do
     end
   end
 end
+
+describe King do
+  let(:king) { King.new('white') }
+  let(:game) { Game.new }
+
+  describe '#poss_moves' do
+    it 'returns an array of seven possible moves given the board conditions' do
+      game.board.grid[4][0] = Pawn.new('black')
+      king.moved = true
+      expect(king.poss_moves(5, 1, game.board.grid)).to eq(
+        [[5, 2], [4, 1], [4, 2], [4, 0], [5, 0]]
+      )
+    end
+  end
+end

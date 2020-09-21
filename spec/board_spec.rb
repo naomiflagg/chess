@@ -37,6 +37,7 @@ describe Board do
 
   describe '#move_piece' do
     before(:all) do
+      @board.fallen = []
       @grid[2][5] = Knight.new('white')
       @board.move_piece([1, 3], [2, 5])
     end
@@ -44,13 +45,21 @@ describe Board do
     it 'substitutes the element at grid finish with element at grid start' do
       expect(@grid[2][5]).to be_instance_of Pawn
     end
-    
+
     it 'creates an empty square the moving piece starts' do
       expect(@grid[1][3]).to eq(' ')
     end
 
     it 'adds an eliminated piece to fallen array' do
-      expect(@board.fallen.size).to eq(3)
+      expect(@board.fallen.size).to eq(1)
+    end
+  end
+
+  describe '#flip' do
+    it 'flips the board' do
+      last = @grid[7][7]
+      @board.flip
+      expect(@grid[0][0]).to eq(last)
     end
   end
 end
