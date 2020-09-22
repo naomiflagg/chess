@@ -1,9 +1,10 @@
-class Board  
-  attr_accessor :grid, :fallen
+class Board 
+  attr_accessor :grid, :fallen, :last_move
 
   def initialize(grid)
     @grid = grid
     @fallen = []
+    @last_move = [Knight, nil, nil]
   end
 
   def display
@@ -21,11 +22,11 @@ class Board
       num -= 1
     end
     puts alpha
-    unless @fallen.empty?
-      puts 'The fallen:'
-      @fallen.each { |piece| print piece.symbol }
-      puts "\n"
-    end
+    return if @fallen.empty?
+
+    puts 'The fallen:'
+    @fallen.each { |piece| print piece.symbol }
+    puts "\n"
   end
 
   # Find grid coordinates associated with letter number format
@@ -48,6 +49,7 @@ class Board
     @fallen << dest_piece unless dest_piece == ' '
     @grid[finish[0]][finish[1]] = @grid[start[0]][start[1]]
     @grid[start[0]][start[1]] = ' '
+    @last_move = [@grid[finish[0]][finish[1]], start, finish]
   end
 
   def flip

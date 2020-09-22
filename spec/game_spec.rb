@@ -48,7 +48,7 @@ describe Game do
 
       it 'sets piece coordinates' do
         game.request_piece
-        expect(game.coord).to eq([6, 4])
+        expect(game.start).to eq([6, 4])
       end
 
       it 'breaks the loop' do
@@ -105,7 +105,9 @@ describe Game do
   end
 
   describe '#request_destination' do
-    let(:poss_moves) { [[0, 4], [1, 6]] }
+    before do
+      game.poss_moves = [[0, 4], [1, 6]]
+    end
 
     before do
       allow(game).to receive(:loop).and_yield.and_yield
@@ -114,16 +116,16 @@ describe Game do
     context 'user inputs a letter number sequence' do
       before do
         allow(game).to receive(:gets).and_return('g7')
-        game.coord = [1, 3]
+        game.start = [1, 3]
       end
 
       it 'returns an array of array indices if array contained in possible moves' do
-        expect(game.request_destination(poss_moves)).to eq([1, 6])
+        expect(game.request_destination).to eq([1, 6])
       end
 
       it 'breaks the loop' do
         expect(game).to receive(:gets).once
-        game.request_destination(poss_moves)
+        game.request_destination
       end
     end
 
@@ -131,14 +133,14 @@ describe Game do
       it 'continues to loop' do
         allow(game).to receive(:gets).and_return('a', 'h9')
         expect(game).to receive(:gets).exactly(:twice)
-        game.request_destination(poss_moves)
+        game.request_destination
       end
     end
   end
 
   describe '#add_castle_moves' do
-    before(:each) do
-      game.coord = [7, 3]
+      before(:each) do
+      game.start = [7, 3]
       game.selected_piece = game.kingw
       game.poss_moves = []
       board.grid[7][5] = ' '
@@ -177,7 +179,7 @@ describe Game do
       board.move_piece([7, 5], [3, 5])
       board.move_piece([7, 6], [4, 6])
       game.selected_piece = board.grid[7][4]
-      game.dest = [7, 6]
+      game.finish = [7, 6]
       game.castle
       expect(board.grid[7][5].class).to eq(Rook)
     end
@@ -186,14 +188,24 @@ describe Game do
   describe '#add_en_passant_move' do
     it 'adds en passant move when last move was pawn moving 2 from start' do
       game.poss_moves = []
-      pawn = board.grid[6][4]
-      board.move_piece([6, 4], [4, 4])
-      game.last_move = [pawn, [6, 4], [4, 4]]
       game.selected_piece = board.grid[6][5]
       board.move_piece([6, 5], [3, 5])
-      game.coord = [4, 5]
+      board.move_piece([6, 4], [4, 4])
+      game.start = [4, 5]
       game.add_en_passant_move
       expect(game.poss_moves). to eq([[3, 4]])
+    end
+  end
+  
+  describe '#request_promotion' do
+    before do
+      allow(game).to receive(:gets).and_return('queen')
+    end
+    it 'changes the pawn to the requested piece' do
+      game.selected_piece = Pawn.new('white')
+      game.finish = [0, 2]
+      game.request_promotion
+      expect(board.grid[0][2].class).to eq(Queen)
     end
   end
 

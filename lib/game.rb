@@ -4,8 +4,8 @@ class Game
   require_relative('player.rb')
   require 'pry'
 
-  attr_accessor :current_player, :coord, :dest, :selected_piece, :poss_moves, :last_move
-  attr_reader :board, :player1, :player2, :last_move, :check, :kingw
+  attr_accessor :current_player, :start, :finish, :selected_piece, :poss_moves
+  attr_reader :board, :player1, :player2, :check, :kingw
 
   def initialize
     @player1 = Player.new('Player 1', 'white')
@@ -15,7 +15,6 @@ class Game
     @current_king = @kingw
     @opposing_king = @kingb
     @check = false
-    @last_move = [Knight, nil, nil]
   end
 
   def begin_game
@@ -54,10 +53,9 @@ class Game
       respond_to_check
       @board.display
       request_move
-      @last_move = [@selected_piece, @coord, @dest]
-      castle
-      @board.move_piece(@coord, @dest)
-      request_pawn_change
+      castle if @selected_piece.class == King
+      @board.move_piece(@start, @finish)
+      request_promotion if @selected_piece.class == Pawn && @finish[0].zero?
       mark_moved(@selected_piece)
       @check = check?(@opposing_king)
       break if checkmate?
@@ -72,11 +70,11 @@ class Game
       # Ask player for letter number coordinates of piece to move
       request_piece
       # Find possible moves for selected object, given current board and object's location
-      @poss_moves = @selected_piece.poss_moves(@coord[0], @coord[1], @board.grid)
+      @poss_moves = @selected_piece.poss_moves(@start[0], @start[1], @board.grid)
       add_castle_moves
       add_en_passant_move
       # Ask player for coordinates for selected piece's destination
-      break unless request_destination(poss_moves) == false
+      break unless request_destination == false
     end
   end
 
@@ -96,28 +94,27 @@ class Game
     return false unless let_num.length == 2 && ('a'..'h').include?(let_num[0]) \
         && ('1'..'8').include?(let_num[1])
 
-    # Ensure selected piece is the current player's piece
     # Turn letter number coordinates in to array indices
-    @coord = @board.find_coord(let_num)
+    @start = @board.find_coord(let_num)
     # Find piece at selected indices
-    @selected_piece = @board.grid[@coord[0]][@coord[1]]
+    @selected_piece = @board.grid[@start[0]][@start[1]]
     return false if @selected_piece == ' '
 
     # Ensure piece belongs to current player
     return true if @selected_piece.color == @current_player.color
   end
 
-  def request_destination(poss_moves)
+  def request_destination
     puts 'Where would you like to move your piece? Use letter, number coordinates.'
     loop do
-      @dest = gets.chomp.downcase
-      return false if @dest == 'n'
+      @finish = gets.chomp.downcase
+      return false if @finish == 'n'
 
       # Turn letter, number input in to array indices
-      @dest = @board.find_coord(@dest)
+      @finish = @board.find_coord(@finish)
       # Ensure input is in the list of valid moves
-      if poss_moves.include?(@dest)
-        return @dest unless causes_check?(@current_king, @coord, @dest)
+      if @poss_moves.include?(@finish)
+        return @finish unless causes_check?(@current_king, @start, @finish)
 
         puts 'Your move puts or keeps your king in check. Please try another.'
         return false
@@ -137,11 +134,11 @@ class Game
     # Temporarily move piece as player intends
     @board.grid[finish[0]][finish[1]] = @board.grid[start[0]][start[1]]
     @board.grid[start[0]][start[1]] = ' '
-    cause = check?(target_king)
+    causes_check = check?(target_king)
     # Return board to original state
     @board.grid[start[0]][start[1]] = @board.grid[finish[0]][finish[1]]
     @board.grid[finish[0]][finish[1]] = temp_piece
-    return true if cause
+    return true if causes_check
   end
 
   def check?(target_king)
@@ -193,9 +190,9 @@ class Game
     return unless @selected_piece.class == King && !@selected_piece.moved && !@check
 
     king_loc = find_piece(@selected_piece)
-    # Check if possible to castle right
+    # Add righthand check to moves list if possible to castle right
     @poss_moves << [king_loc[0], king_loc[1] + 2] if can_castle?((king_loc[1] + 1..6).to_a, @board.grid[7][7])
-    # Check if possible to castle left
+    # Add lefthand check to moves list if possible to castle left
     @poss_moves << [king_loc[0], king_loc[1] - 2] if can_castle?((1...king_loc[1]).to_a, @board.grid[7][0])
   end
 
@@ -203,42 +200,40 @@ class Game
     # Ensure rightmost piece is rook, rook has not moved, and spaces between are empty
     array.each do |col|
       return false if @board.grid[7][col] != ' ' \
-      || causes_check?(@current_king, @coord, [7, col]) \
+      || causes_check?(@current_king, @start, [7, col]) \
       || rook.class != Rook || rook.moved == true
     end
   end
 
   def castle
     if @selected_piece == kingw
-      @board.move_piece([7, 7], [7, 5]) if @dest == [7, 6]
-      @board.move_piece([7, 0], [7, 3]) if @dest == [7, 2]
+      @board.move_piece([7, 7], [7, 5]) if @finish == [7, 6]
+      @board.move_piece([7, 0], [7, 3]) if @finish == [7, 2]
     else
-      @board.move_piece([7, 7], [7, 4]) if @dest == [7, 5]
-      @board.move_piece([7, 0], [7, 2]) if @dest == [7, 1]
+      @board.move_piece([7, 7], [7, 4]) if @finish == [7, 5]
+      @board.move_piece([7, 0], [7, 2]) if @finish == [7, 1]
     end
   end
 
   def add_en_passant_move
-    last_piece = @last_move[0]
+    last_piece = @board.last_move[0]
     last_piece_loc = find_piece(last_piece)
     # Ensure last move was pawn that moved two from starting position
     if @selected_piece.class == Pawn && last_piece.class == Pawn \
-      && @last_move[1][0] == 6 && @last_move[2][0] == 4 \
-      && @coord[0] == last_piece_loc[0] \
-      && (@coord[1] - last_piece_loc[1]).abs == 1
-      @poss_moves << [@coord[0] - 1, last_piece_loc[1]]
+      && @board.last_move[1][0] == 6 && @board.last_move[2][0] == 4 \
+      && @start[0] == last_piece_loc[0] \
+      && (@start[1] - last_piece_loc[1]).abs == 1
+      @poss_moves << [@start[0] - 1, last_piece_loc[1]]
     end
   end
 
-  def request_pawn_change
-    return unless @selected_piece.class == Pawn && @dest[0].zero?
-
+  def request_promotion
     pieces = %w[knight bishop queen rook]
     puts 'What would you like to change your pawn to?'
     loop do
       piece = gets.chomp.downcase
       if pieces.include?(piece)
-        change_pawn(piece)
+        promote(piece)
         return
       end
 
@@ -246,7 +241,7 @@ class Game
     end
   end
 
-  def change_pawn(piece)
+  def promote(piece)
     color = @selected_piece.color
     new_piece = case piece
                 when 'knight'
@@ -258,7 +253,7 @@ class Game
                 when 'rook'
                   Rook.new(color)
                 end
-    @board.grid[@dest[0]][@dest[1]] = new_piece
+    @board.grid[@finish[0]][@finish[1]] = new_piece
   end
 
   def switch_player
@@ -269,5 +264,5 @@ class Game
   end
 end
 
-game = Game.new
-game.begin_game
+#game = Game.new
+#game.begin_game
