@@ -6,8 +6,8 @@ class Game
   require_relative('player.rb')
   require 'pry'
 
-  attr_accessor :start, :finish, :piece
-  attr_reader :board, :player1, :player2, :current_player, :opposing_player
+  attr_accessor :start, :finish, :piece, :current_player
+  attr_reader :board, :player1, :player2, :opposing_player
 
   def initialize
     @board = Board.new(self)
@@ -39,7 +39,7 @@ class Game
       request_move
       @board.castle(@piece, @finish) if @piece.class == King
       @board.move_piece(@start, @finish)
-      request_promotion if @piece.class == Pawn && @finish[0].zero?
+      request_promotion(@piece) if @piece.class == Pawn && @finish[0].zero?
       mark_moved(@piece)
       check = @board.check?(@opposing_player.king)
       break if @board.checkmate?
@@ -104,13 +104,13 @@ class Game
     puts "#{@board.current_player.name}, your king is in check." if check
   end
 
-  def request_promotion
+  def request_promotion(piece)
     pieces = %w[knight bishop queen rook]
     puts 'What would you like to change your pawn to?'
     loop do
-      piece = gets.chomp.downcase
-      if pieces.include?(piece)
-        @board.promote(piece)
+      promotion = gets.chomp.downcase
+      if pieces.include?(promotion)
+        @board.promote(piece, promotion)
         return
       end
 

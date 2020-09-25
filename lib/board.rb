@@ -139,9 +139,9 @@ class Board
     end
   end
 
-  def promote(piece)
+  def promote(piece, promotion)
     color = piece.color
-    new_piece = case piece
+    new_piece = case promotion
                 when 'knight'
                   Knight.new(color)
                 when 'bishop'
