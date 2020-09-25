@@ -34,8 +34,6 @@ class Pawn < Piece
     diags = [[row - 1, col - 1], [row - 1, col + 1]]
     diags.each do |diag|
       moves << diag if valid?(diag, board) && board[diag[0]][diag[1]] != ' '
-    #en passant
-    #end of board turn in to other piece
     end
     moves
   end
