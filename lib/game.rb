@@ -124,6 +124,3 @@ class Game
     puts "#{@current_player.name}, you're up!"
   end
 end
-
-game = Game.new
-game.begin_game
