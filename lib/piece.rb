@@ -1,5 +1,4 @@
 class Piece
-  require 'pry'
   attr_accessor :color, :symbol
 
   def initialize

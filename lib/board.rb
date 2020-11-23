@@ -212,6 +212,3 @@ class Board
     @grid.map!(&:reverse).reverse!
   end
 end
-
-#board = Board.new
-#board.display

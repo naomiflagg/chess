@@ -4,7 +4,6 @@ class Game
   require_relative('board.rb')
   require_relative('piece.rb')
   require_relative('player.rb')
-  require 'pry'
 
   attr_accessor :start, :finish, :piece, :current_player
   attr_reader :board, :player1, :player2, :opposing_player
